@@ -14,7 +14,7 @@ interface ProductRepositoryInterface
 
     public function incrementReserved(int $productId, int $quantity): bool;
 
-    public function decrementReserved(int $productId, int $quantity): bool;
+    public function decrementReserved(int $productId, int $quantity): void;
 
     public function decrementStock(int $productId, int $quantity): bool;
 }

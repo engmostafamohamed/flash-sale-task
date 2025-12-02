@@ -15,11 +15,7 @@ class ProductRepository implements ProductRepositoryInterface
      */
     public function find(int $id): ?Product
     {
-        return Cache::remember(
-            "product:{$id}",
-            now()->addSeconds(5),
-            fn() => Product::find($id)
-        );
+        return Cache::remember("product:{$id}", now()->addMinutes(5), fn() => Product::find($id));
     }
 
     /**
@@ -66,21 +62,33 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * Decrement reserved quantity
      */
-    public function decrementReserved(int $productId, int $quantity): bool
+    // public function decrementReserved(int $productId, int $quantity): bool
+    // {
+    //     $result = Product::where('id', $productId)
+    //         ->where('reserved', '>=', $quantity)
+    //         ->decrement('reserved', $quantity);
+
+    //     if ($result) {
+    //         Cache::forget("product:{$productId}");
+    //         Log::info("Product reserved decremented", [
+    //             'product_id' => $productId,
+    //             'quantity' => $quantity
+    //         ]);
+    //     }
+
+    //     return $result > 0;
+    // }
+    public function decrementReserved(int $productId, int $quantity): void
     {
-        $result = Product::where('id', $productId)
+        Product::where('id', $productId)
             ->where('reserved', '>=', $quantity)
             ->decrement('reserved', $quantity);
 
-        if ($result) {
-            Cache::forget("product:{$productId}");
-            Log::info("Product reserved decremented", [
-                'product_id' => $productId,
-                'quantity' => $quantity
-            ]);
-        }
-
-        return $result > 0;
+        Cache::forget("product:{$productId}");
+        Log::info("Product reserved decremented", [
+            'product_id' => $productId,
+            'quantity' => $quantity
+        ]);
     }
 
     /**

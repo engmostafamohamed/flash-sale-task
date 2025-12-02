@@ -31,6 +31,35 @@ If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Lar
 
 We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
+### Project Setup
+
+# 1. Install dependencies
+composer install
+
+# 2. Setup environment
+cp .env.example .env
+php artisan key:generate
+
+# 3. Create database
+mysql -u root -p -e "CREATE DATABASE flash_sale_db;"
+
+# 4. Run migrations
+php artisan migrate
+
+# 5. Seed data
+php artisan db:seed
+
+# 6. Run tests
+php artisan migrate --database=testing_mysql
+php artisan optimize:clear
+php artisan test
+
+# 7. Start servers (3 terminals)
+php artisan serve               # Terminal 1
+php artisan queue:work          # Terminal 2
+php artisan schedule:work       # Terminal 3
+
+
 ### Premium Partners
 
 - **[Vehikl](https://vehikl.com)**

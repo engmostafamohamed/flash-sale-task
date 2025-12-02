@@ -15,7 +15,7 @@ interface HoldRepositoryInterface
 
     public function markAsUsed(int $holdId): bool;
 
-    public function markAsReleased(int $holdId): bool;
+    public function markAsReleased(int $holdId): void;
 
     public function getExpiredHolds(): Collection;
 }

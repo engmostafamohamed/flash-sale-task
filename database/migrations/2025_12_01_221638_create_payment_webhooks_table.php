@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('payment_webhooks', function (Blueprint $table) {
             $table->id();
+            $table->string('idempotency_key')->unique();
+            $table->foreignId('order_id')->constrained()->onDelete('cascade');
+            $table->string('status')->default('success'); // success, failed
+            $table->boolean('processed')->default(false);
+            $table->json('payload')->nullable(); // Store full webhook data
             $table->timestamps();
+
+            // Indexes
+            $table->index(['idempotency_key', 'processed']);
         });
     }
 
@@ -22,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('payments');
+        Schema::dropIfExists('payment_webhooks');
     }
 };

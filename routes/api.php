@@ -17,3 +17,5 @@ Route::post('/orders', [OrderController::class, 'store']);
 
 // Webhook Routes
 Route::post('/payments/webhook', [WebhookController::class, 'handlePayment']);
+
+// Route::post('/shipments/webhook', [WebhookController::class, 'handleShipment']);

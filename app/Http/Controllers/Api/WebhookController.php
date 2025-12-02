@@ -7,7 +7,10 @@ use App\Services\PaymentWebhookService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\PaymentWebhook;
 
 class WebhookController extends Controller
 {
@@ -18,37 +21,52 @@ class WebhookController extends Controller
     /**
      * Handle payment webhook
      */
-    public function handlePayment(Request $request): JsonResponse
+    public function handlePayment(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'idempotency_key' => 'required|string|max:255',
-            'order_id' => 'required|integer|exists:orders,id',
-            'status' => 'required|string|in:success,failed',
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'status' => 'required|in:success,failed',
+            'idempotency_key' => 'required|string',
         ]);
 
-        if ($validator->fails()) {
+        // Check idempotency first
+        if (PaymentWebhook::where('idempotency_key', $request->idempotency_key)->exists()) {
             return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
+                'success' => true,
+                'message' => 'Webhook already processed',
+                'duplicate' => true,
+            ]);
         }
 
-        try {
-            $result = $this->webhookService->processWebhook(
-                $request->input('idempotency_key'),
-                $request->input('order_id'),
-                $request->input('status'),
-                $request->all()
-            );
+        DB::transaction(function () use ($request) {
+            $order = Order::lockForUpdate()->find($request->order_id);
+            $product = Product::lockForUpdate()->find($order->product_id);
 
-            return response()->json($result);
+            if ($request->status === 'success') {
+                if ($product->reserved < $order->quantity) {
+                    throw new \Exception('Reserved quantity insufficient');
+                }
+                $product->stock -= $order->quantity;
+                $product->reserved -= $order->quantity;
+                $order->status = 'paid';
+            } else {
+                $product->reserved -= $order->quantity;
+                $order->status = 'cancelled';
+            }
 
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
+            $product->save();
+            $order->save();
+
+            PaymentWebhook::create([
+                'idempotency_key' => $request->idempotency_key,
+                'order_id' => $order->id,
+            ]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Webhook processed successfully',
+            'duplicate' => false,
+        ]);
     }
 }

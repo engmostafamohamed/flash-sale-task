@@ -64,15 +64,13 @@ class HoldRepository implements HoldRepositoryInterface
     /**
      * Mark hold as released
      */
-    public function markAsReleased(int $holdId): bool
+    public function markAsReleased(int $holdId): void
     {
-        $result = Hold::where('id', $holdId)->update(['released' => true]);
-
-        if ($result) {
-            Log::info("Hold marked as released", ['hold_id' => $holdId]);
+        $hold = $this->find($holdId);
+        if ($hold) {
+            $hold->released = true;
+            $hold->save();
         }
-
-        return $result > 0;
     }
 
     /**

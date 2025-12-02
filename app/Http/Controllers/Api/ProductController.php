@@ -18,7 +18,6 @@ class ProductController extends Controller
     public function show(int $id): JsonResponse
     {
         $product = $this->productService->getProductDetails($id);
-
         if (!$product) {
             return response()->json([
                 'success' => false,
